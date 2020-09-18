@@ -4,6 +4,17 @@ This project is just for fun to try to reverse engeeniring USB mouse and create 
 
 ![image](https://user-images.githubusercontent.com/2198153/93603940-9fe56400-f9bc-11ea-9fd3-1e1f34773fba.png)
 
+
+Udev and user permissions:
+```shell
+# copy you product id of device like ...ID 09da:xxxx where is xxxx is what you need and to change it in the file udev/10-a4tech.rules
+lsusb
+sudo cp udev/10-a4tech.rules /etc/udev/rules.d/
+sudo groupadd a4tech
+sudo usermod -aG a4tech $USER
+sudo udevadm control --reload-rules && udevadm trigger
+```
+
 Big thanks with part of work the guys
 
 - https://github.com/openrazer/openrazer/wiki/Reverse-Engineering-USB-Protocol

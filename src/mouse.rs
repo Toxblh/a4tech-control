@@ -31,11 +31,11 @@ const COMPATIBLE_PIDS: [u16; 12] = [
 const A4TECH_MAGIC: u8 = 0x07;
 
 const DPI_OPCODE: u8 = 0x0d;
-// const INFO_OPCODE: u8 = 0x05;
+const INFO_OPCODE: u8 = 0x05;
 
-// const BREATH_OPCODE: u8 = 0x03;
-// const BREATH_OPCODE1: u8 = 0x06;
-// const BREATH_OPCODE2: u8 = 0x01;
+const BREATH_OPCODE: u8 = 0x03;
+const BREATH_OPCODE1: u8 = 0x06;
+const BREATH_OPCODE2: u8 = 0x01;
 
 const BRIGHTNESS_OPCODE: u8 = 0x11;
 const BRIGHTNESS_WRITE: u8 = 0x80;
@@ -103,40 +103,6 @@ fn open_device<T: UsbContext>(context: &mut T) -> Option<(DeviceHandle<T>, rusb:
     None
 }
 
-#[allow(dead_code)]
-fn print_device_info<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<()> {
-    let device_desc = handle.device().device_descriptor()?;
-    let timeout = Duration::from_secs(1);
-    let languages = handle.read_languages(timeout)?;
-
-    println!("Active configuration: {}", handle.active_configuration()?);
-
-    if !languages.is_empty() {
-        let language = languages[0];
-        println!("Language: {:?}", language);
-
-        println!(
-            "Manufacturer: {}",
-            handle
-                .read_manufacturer_string(language, &device_desc, timeout)
-                .unwrap_or("Not Found".to_string())
-        );
-        println!(
-            "Product: {}",
-            handle
-                .read_product_string(language, &device_desc, timeout)
-                .unwrap_or("Not Found".to_string())
-        );
-        println!(
-            "Serial Number: {}",
-            handle
-                .read_serial_number_string(language, &device_desc, timeout)
-                .unwrap_or("Not Found".to_string())
-        );
-    }
-    Ok(())
-}
-
 pub fn read_brightness<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8> {
     let mut res: [u8; 72] = [0x00; 72];
     let mut data: [u8; 72] = [0x00; 72];
@@ -145,14 +111,8 @@ pub fn read_brightness<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8
     data[4] = BRIGHTNESS_READ;
 
     read_from_mouse(handle, &data, &mut res).expect("read_brightness");
-
-    for i in 0..res.len() {
-        print!("{}:{:02x} ", i, res[i]);
-    }
-
-    println!("");
-
-    println!("Brightness: {}", res[8]);
+    println!("read_brightness:");
+    print_res(&res);
 
     Ok(res[8])
 }
@@ -164,16 +124,103 @@ pub fn read_dpi<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8> {
     data[1] = DPI_OPCODE;
 
     read_from_mouse(handle, &data, &mut res).expect("read_dpi");
-
-    for i in 0..res.len() {
-        print!("{:02x} ", res[i]);
-    }
-
-    println!("");
-
-    println!("DPI: {}", res[8]);
+    println!("DPI:");
+    print_res(&res);
 
     Ok(res[8])
+}
+
+pub fn read_breath<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8> {
+    let mut res: [u8; 72] = [0x00; 72];
+    let mut data: [u8; 72] = [0x00; 72];
+    data[0] = A4TECH_MAGIC;
+    data[1] = BREATH_OPCODE;
+    data[2] = BREATH_OPCODE1;
+    data[3] = BREATH_OPCODE2;
+
+    read_from_mouse(handle, &data, &mut res).expect("read_breath");
+    println!("read_breath:");
+    print_res(&res);
+
+    Ok(res[8])
+}
+
+pub fn read_info<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8> {
+    let mut res: [u8; 72] = [0x00; 72];
+    let mut data: [u8; 72] = [0x00; 72];
+    data[0] = A4TECH_MAGIC;
+    data[1] = INFO_OPCODE;
+
+    read_from_mouse(handle, &data, &mut res).expect("read_info");
+    println!("read_info:");
+    print_res(&res);
+
+    Ok(res[8])
+}
+
+pub fn read_rgb<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8> {
+    let mut res: [u8; 72] = [0x00; 72];
+    let mut data: [u8; 72] = [0x00; 72];
+    data[0] = A4TECH_MAGIC;
+    data[1] = 0x03;
+    data[2] = 0x06;
+
+    read_from_mouse(handle, &data, &mut res).expect("read_rgb");
+    println!("read_rgb:");
+    print_res(&res);
+
+    Ok(res[8])
+}
+
+pub fn read_mode<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8> {
+    let mut res: [u8; 72] = [0x00; 72];
+    let mut data: [u8; 72] = [0x00; 72];
+    data[0] = A4TECH_MAGIC;
+    data[1] = 0x03;
+    data[2] = 0x06;
+    data[3] = 0x05;
+
+    read_from_mouse(handle, &data, &mut res).expect("read_rgb");
+    println!("read_mode:");
+    print_res(&res);
+
+    Ok(res[8])
+}
+
+pub fn read_firmware<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8> {
+    let mut res: [u8; 72] = [0x00; 72];
+    let mut data: [u8; 72] = [0x00; 72];
+    data[0] = A4TECH_MAGIC;
+    data[1] = 0x1f;
+
+    read_from_mouse(handle, &data, &mut res).expect("read_firmware");
+    println!("read_firmware:");
+    print_res(&res);
+
+    Ok(res[8])
+}
+
+pub fn read_calibration<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<u8> {
+    let mut res: [u8; 72] = [0x00; 72];
+    let mut data: [u8; 72] = [0x00; 72];
+    data[0] = A4TECH_MAGIC;
+    data[1] = 0x13;
+
+    read_from_mouse(handle, &data, &mut res).expect("read_calibration");
+    println!("read_calibration:");
+    print_res(&res);
+
+    Ok(res[8])
+}
+
+
+pub fn restart<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<()> {
+    let mut data: [u8; 72] = [0x00; 72];
+    data[0] = A4TECH_MAGIC;
+
+    write_to_mouse(handle, &data).expect("restart");
+
+    Ok(())
 }
 
 pub fn write_brightness<T: UsbContext>(handle: &mut DeviceHandle<T>, level: u8) -> Result<()> {
@@ -188,9 +235,37 @@ pub fn write_brightness<T: UsbContext>(handle: &mut DeviceHandle<T>, level: u8) 
     Ok(())
 }
 
+pub fn write_dpi_3200<T: UsbContext>(handle: &mut DeviceHandle<T>) -> Result<()> {
+    let mut data: [u8; 72] = [0x00; 72];
+    data[0] = A4TECH_MAGIC;
+    data[1] = 0x0d;
+    data[8] = 0x02; //
+    data[10] = 0x10; //
+    data[11] = 0x10; //
+    data[12] = 0x81; //
+    data[13] = 0x01; // Refresh rate 1000hz = 01
+
+    println!("write_dpi_3200");
+    write_to_mouse(handle, &data).expect("write_dpi_3200");
+
+    Ok(())
+}
+
+fn print_res(res: &[u8]) {
+    for i in 0..res.len() {
+        if i % 2 == 0 {
+            print!("{:02x}", res[i]);
+        } else {
+            print!("{:02x} ", res[i]);
+        }
+    }
+
+    println!("");
+}
+
 fn write_to_mouse<T: UsbContext>(handle: &mut DeviceHandle<T>, data: &[u8]) -> Result<()> {
     match handle.write_control(0x21, 9, 0x0307, 2, &data, Duration::from_secs(10)) {
-        Ok(res) => println!("Ok! {}", res),
+        Ok(res) => println!("Write Ok! {}", res),
         Err(e) => println!("Write to mouse Error! {}", e),
     }
 
@@ -212,7 +287,7 @@ fn read_from_mouse<T: UsbContext>(
                 &mut response_data,
                 std::time::Duration::new(10, 0),
             ) {
-                Ok(res) => println!("Ok! {}", res),
+                Ok(_res) => (), //println!("Ok! {}", res),
                 Err(e) => println!("read_from_mouse Error! {}", e),
             }
 
@@ -239,4 +314,11 @@ pub fn test() {
     println!("Level: {}", level);
 
     read_dpi(&mut handle).unwrap();
+    read_info(&mut handle).unwrap();
+    read_breath(&mut handle).unwrap();
+    read_rgb(&mut handle).unwrap();
+    read_mode(&mut handle).unwrap();
+    read_firmware(&mut handle).unwrap();
+    read_calibration(&mut handle).unwrap();
+    write_dpi_3200(&mut handle).unwrap();
 }

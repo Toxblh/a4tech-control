@@ -1,0 +1,1 @@
+SUBSYSTEM=="usb", ATTRS{idVendor}=="09da", ATTRS{idProduct}=="5650", MODE="660", GROUP="a4tech"
